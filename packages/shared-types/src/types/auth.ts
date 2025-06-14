@@ -1,4 +1,4 @@
-import { IUserPublic } from '../models/user';
+import { IUserPublic, IUserAdmin } from '../models/user';
 import { UserRole } from '../enums';
 
 export interface RegisterRequest {
@@ -26,6 +26,15 @@ export interface AuthResponse {
 
 export interface WebAuthResponse {
   user: IUserPublic;
+  company?: {
+    id: string;
+    name: string;
+    code: string;
+  };
+}
+
+export interface AdminAuthResponse {
+  user: IUserAdmin;
   company?: {
     id: string;
     name: string;

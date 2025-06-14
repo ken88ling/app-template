@@ -1,22 +1,10 @@
 import { internalApi } from "./api";
-import { LoginRequest, IUserPublic, ApiResponse } from "@app/shared-types";
+import { LoginRequest, IUserAdmin, ApiResponse, AdminAuthResponse } from "@app/shared-types";
 
 // Alias for compatibility
 export type LoginData = LoginRequest;
-export interface User extends IUserPublic {
-  phone?: string;
-  employeeId?: string;
-  department?: string;
-}
-
-export interface AuthResponse {
-  user: User;
-  company?: {
-    id: string;
-    name: string;
-    code: string;
-  };
-}
+export type User = IUserAdmin;
+export type AuthResponse = AdminAuthResponse;
 
 class AuthService {
   /**

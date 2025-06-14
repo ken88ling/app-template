@@ -63,8 +63,8 @@ export async function GET() {
 
     // Double-check admin role from backend response
     if (
-      data.data.user.role !== UserRole.MANAGER &&
-      data.data.user.role !== UserRole.SUPER_ADMIN
+      data.data.role !== UserRole.MANAGER &&
+      data.data.role !== UserRole.SUPER_ADMIN
     ) {
       return NextResponse.json(
         { error: { message: "Admin access required" } },
@@ -72,7 +72,10 @@ export async function GET() {
       );
     }
 
-    return NextResponse.json(data);
+    return NextResponse.json({ 
+      success: true, 
+      data: { user: data.data } 
+    });
   } catch {
     return NextResponse.json(
       { error: { message: "Internal server error" } },
