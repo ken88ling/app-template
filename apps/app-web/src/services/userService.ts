@@ -1,4 +1,4 @@
-import { internalApi } from "./api";
+import { apiClient, getServerAuthHeaders } from "./apiClient";
 import { 
   IUserPublic, 
   ApiResponse, 
@@ -13,8 +13,11 @@ class UserService {
    * Get current user profile
    */
   async getMyProfile(): Promise<IUserPublic> {
-    const response =
-      await internalApi.get<ApiResponse<IUserPublic>>("/users/my-profile");
+    const headers = await getServerAuthHeaders();
+    const response = await apiClient.get<ApiResponse<IUserPublic>>(
+      "/users/my-profile",
+      { headers }
+    );
     
     if (!response.data) {
       throw new Error("Invalid profile response");
@@ -27,9 +30,11 @@ class UserService {
    * Update current user profile
    */
   async updateMyProfile(data: UpdateProfileData): Promise<IUserPublic> {
-    const response = await internalApi.put<ApiResponse<IUserPublic>>(
+    const headers = await getServerAuthHeaders();
+    const response = await apiClient.put<ApiResponse<IUserPublic>>(
       "/users/my-profile",
-      data
+      data,
+      { headers }
     );
     
     if (!response.data) {
@@ -46,20 +51,25 @@ class UserService {
     const formData = new FormData();
     formData.append("photo", file);
 
-    // For file uploads, we need to override the content-type
-    const response = await fetch("/api/users/my-profile/photo", {
-      method: "POST",
-      body: formData,
-      credentials: "include",
-    });
+    const headers = await getServerAuthHeaders();
+    
+    // For file uploads, we need to let axios set the content-type with boundary
+    const response = await apiClient.post<ApiResponse<ProfilePhotoResponse>>(
+      "/users/my-profile/photo",
+      formData,
+      {
+        headers: {
+          ...headers,
+          // Let axios set the Content-Type with boundary for multipart/form-data
+        },
+      }
+    );
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error?.message || "Failed to upload photo");
+    if (!response.data) {
+      throw new Error("Failed to upload photo");
     }
 
-    const data = await response.json();
-    return data.data;
+    return response.data;
   }
 
   /**
@@ -69,18 +79,25 @@ class UserService {
     currentPassword: string,
     newPassword: string
   ): Promise<void> {
-    await internalApi.post("/users/change-password", {
-      currentPassword,
-      newPassword,
-    });
+    const headers = await getServerAuthHeaders();
+    await apiClient.post(
+      "/users/change-password",
+      {
+        currentPassword,
+        newPassword,
+      },
+      { headers }
+    );
   }
 
   /**
    * Get user by ID (admin only)
    */
   async getUserById(userId: string): Promise<IUserPublic> {
-    const response = await internalApi.get<ApiResponse<IUserPublic>>(
-      `/users/${userId}`
+    const headers = await getServerAuthHeaders();
+    const response = await apiClient.get<ApiResponse<IUserPublic>>(
+      `/users/${userId}`,
+      { headers }
     );
     
     if (!response.data) {
@@ -98,17 +115,14 @@ class UserService {
     role?: string;
     status?: string;
   }): Promise<PaginatedResponse<IUserPublic>> {
-    const queryParams = new URLSearchParams();
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined) {
-          queryParams.append(key, value.toString());
-        }
-      });
-    }
-
-    const response = await internalApi.get<ApiResponse<PaginatedResponse<IUserPublic>>>(
-      `/users?${queryParams.toString()}`
+    const headers = await getServerAuthHeaders();
+    
+    const response = await apiClient.get<ApiResponse<PaginatedResponse<IUserPublic>>>(
+      `/users`,
+      {
+        params,
+        headers
+      }
     );
 
     if (!response.data) {

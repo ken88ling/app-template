@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { UserRole } from "@app/shared-types";
-
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
+import { apiClient } from "@/services/apiClient";
+import { IUserAdmin, ApiResponse, UserRole } from "@app/shared-types";
 
 export async function GET() {
   try {
@@ -37,34 +35,24 @@ export async function GET() {
       );
     }
 
-    // Forward request to backend with token
-    const response = await fetch(`${API_BASE_URL}/auth/profile`, {
-      method: "GET",
+    // Use the same apiClient with auth header
+    const response = await apiClient.get<ApiResponse<IUserAdmin>>("/auth/profile", {
       headers: {
         Authorization: `Bearer ${accessToken.value}`,
       },
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      // If token is invalid, clear cookies
-      if (response.status === 401) {
-        cookieStore.delete("accessToken");
-        cookieStore.delete("refreshToken");
-        cookieStore.delete("adminRole");
-      }
-
+    if (!response.success || !response.data) {
       return NextResponse.json(
-        { error: data.error || { message: "Failed to get profile" } },
-        { status: response.status }
+        { error: { message: "Failed to get profile" } },
+        { status: 400 }
       );
     }
 
     // Double-check admin role from backend response
     if (
-      data.data.role !== UserRole.MANAGER &&
-      data.data.role !== UserRole.SUPER_ADMIN
+      response.data.role !== UserRole.MANAGER &&
+      response.data.role !== UserRole.SUPER_ADMIN
     ) {
       return NextResponse.json(
         { error: { message: "Admin access required" } },
@@ -74,12 +62,25 @@ export async function GET() {
 
     return NextResponse.json({ 
       success: true, 
-      data: { user: data.data } 
+      data: { user: response.data } 
     });
-  } catch {
+  } catch (error: any) {
+    // If token is invalid, clear cookies
+    if (error.status === 401) {
+      const cookieStore = await cookies();
+      cookieStore.delete("accessToken");
+      cookieStore.delete("refreshToken");
+      cookieStore.delete("adminRole");
+    }
+
     return NextResponse.json(
-      { error: { message: "Internal server error" } },
-      { status: 500 }
+      { 
+        error: { 
+          message: error.message || "Failed to get profile",
+          code: error.code 
+        } 
+      },
+      { status: error.status || 500 }
     );
   }
 }

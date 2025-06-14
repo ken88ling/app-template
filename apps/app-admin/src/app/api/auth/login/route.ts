@@ -1,36 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { UserRole } from "@app/shared-types";
-
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
+import { apiClient } from "@/services/apiClient";
+import { LoginRequest, AuthResponse, ApiResponse, UserRole } from "@app/shared-types";
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const body: LoginRequest = await request.json();
 
-    // Forward request to backend
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
+    // Use the same apiClient - it knows we're on server and will call backend directly
+    const response = await apiClient.post<ApiResponse<AuthResponse>>("/auth/login", body);
 
-    const data = await response.json();
-
-    if (!response.ok) {
+    if (!response.success || !response.data) {
       return NextResponse.json(
-        { error: data.error || { message: "Login failed" } },
-        { status: response.status }
+        { error: { message: "Login failed" } },
+        { status: 400 }
       );
     }
 
-    // Verify user is an admin or manager (simplified check)
+    // Verify user is an admin or manager
     if (
-      data.data.user.role !== UserRole.MANAGER &&
-      data.data.user.role !== UserRole.SUPER_ADMIN
+      response.data.user.role !== UserRole.MANAGER &&
+      response.data.user.role !== UserRole.SUPER_ADMIN
     ) {
       return NextResponse.json(
         { error: { message: "Access denied. Admin privileges required." } },
@@ -41,10 +31,10 @@ export async function POST(request: NextRequest) {
     // Set secure HTTP-only cookies
     const cookieStore = await cookies();
 
-    console.log("Login API - Setting cookies for user:", data.data.user.email);
+    console.log("Login API - Setting cookies for user:", response.data.user.email);
 
     // Access token - shorter expiry
-    cookieStore.set("accessToken", data.data.accessToken, {
+    cookieStore.set("accessToken", response.data.accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
@@ -53,7 +43,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Refresh token - longer expiry
-    cookieStore.set("refreshToken", data.data.refreshToken, {
+    cookieStore.set("refreshToken", response.data.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
@@ -62,7 +52,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Admin role cookie for quick checks
-    cookieStore.set("adminRole", data.data.user.role, {
+    cookieStore.set("adminRole", response.data.user.role, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
@@ -76,14 +66,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        user: data.data.user,
-        company: data.data.company,
+        user: response.data.user,
+        company: response.data.company,
       },
     });
-  } catch {
+  } catch (error: any) {
+    console.error("Admin login error:", error);
+    
     return NextResponse.json(
-      { error: { message: "Internal server error" } },
-      { status: 500 }
+      { 
+        error: { 
+          message: error.message || "Login failed",
+          code: error.code 
+        } 
+      },
+      { status: error.status || 500 }
     );
   }
 }

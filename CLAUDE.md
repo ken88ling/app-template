@@ -100,9 +100,10 @@ See [packages/shared-types/README.md](packages/shared-types/README.md) for detai
 ### Key Integration Points
 
 - Authentication: JWT tokens shared between web and mobile
-- API: All clients communicate with app-be backend
+- API: All clients communicate with app-be backend using Axios
 - Database: SQLite (dev)
 - Shared Types: All apps use @app/shared-types for TypeScript definitions
+- HTTP Client: Unified Axios implementation with automatic error handling
 
 ## Important Considerations
 

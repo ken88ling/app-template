@@ -1,4 +1,4 @@
-import { internalApi } from "./api";
+import { apiClient, getServerAuthHeaders } from "./apiClient";
 import { LoginRequest, IUserAdmin, ApiResponse, AdminAuthResponse } from "@app/shared-types";
 
 // Alias for compatibility
@@ -11,7 +11,7 @@ class AuthService {
    * Admin login - uses internal API route that handles cookies
    */
   async login(data: LoginData): Promise<AuthResponse> {
-    const response = await internalApi.post<ApiResponse<AuthResponse>>(
+    const response = await apiClient.post<ApiResponse<AuthResponse>>(
       "/auth/login",
       data
     );
@@ -25,15 +25,18 @@ class AuthService {
    * Logout admin - uses internal API route that clears cookies
    */
   async logout(): Promise<void> {
-    await internalApi.post("/auth/logout");
+    await apiClient.post("/auth/logout");
   }
 
   /**
    * Get current admin profile - uses internal API route that reads cookies
    */
   async getProfile(): Promise<User> {
-    const response =
-      await internalApi.get<ApiResponse<{ user: User }>>("/auth/profile");
+    const headers = await getServerAuthHeaders();
+    const response = await apiClient.get<ApiResponse<{ user: User }>>(
+      "/auth/profile",
+      { headers }
+    );
     if (!response.data) {
       throw new Error("Failed to get profile: No data received");
     }
