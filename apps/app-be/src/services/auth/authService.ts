@@ -27,6 +27,8 @@ import {
   sendPasswordResetEmail,
 } from "../../utils/email";
 import crypto from "crypto";
+import logger from "../../utils/logger";
+import cacheService from "../cache";
 
 export class AuthService {
   private createUserPublic(user: any): IUserPublic {
@@ -89,17 +91,18 @@ export class AuthService {
       sessionId: generateTokenId(),
     });
 
-    // Store refresh token
+    // Store hashed refresh token
+    const hashedRefreshToken = await hashPassword(refreshToken);
     await prisma.user.update({
       where: { id: user.id },
-      data: { refreshToken },
+      data: { refreshToken: hashedRefreshToken },
     });
 
     // Send verification email
     try {
       await sendVerificationEmail(user.email, emailVerificationToken);
     } catch (error) {
-      console.error("Failed to send verification email:", error);
+      logger.error("Failed to send verification email:", error);
       // Don't fail the registration if email fails
     }
 
@@ -160,12 +163,13 @@ export class AuthService {
       sessionId: generateTokenId(),
     });
 
-    // Update last login and refresh token
+    // Update last login and hashed refresh token
+    const hashedRefreshToken = await hashPassword(refreshToken);
     await prisma.user.update({
       where: { id: user.id },
       data: {
         lastLoginAt: new Date(),
-        refreshToken,
+        refreshToken: hashedRefreshToken,
       },
     });
 
@@ -197,7 +201,17 @@ export class AuthService {
         where: { id: payload.userId },
       });
 
-      if (!user || user.refreshToken !== refreshToken) {
+      if (!user) {
+        throw new ApiError(
+          "Invalid refresh token",
+          HttpStatus.UNAUTHORIZED,
+          ErrorCode.INVALID_TOKEN
+        );
+      }
+
+      // Verify the refresh token hash
+      const isValidToken = await verifyPassword(refreshToken, user.refreshToken || "");
+      if (!isValidToken) {
         throw new ApiError(
           "Invalid refresh token",
           HttpStatus.UNAUTHORIZED,
@@ -226,10 +240,11 @@ export class AuthService {
         sessionId: generateTokenId(),
       });
 
-      // Update refresh token
+      // Update hashed refresh token
+      const hashedNewRefreshToken = await hashPassword(newRefreshToken);
       await prisma.user.update({
         where: { id: user.id },
-        data: { refreshToken: newRefreshToken },
+        data: { refreshToken: hashedNewRefreshToken },
       });
 
       return {
@@ -252,6 +267,10 @@ export class AuthService {
       where: { id: userId },
       data: { refreshToken: null },
     });
+
+    // Clear user cache
+    const cacheKey = cacheService.generateKey("user", userId);
+    await cacheService.del(cacheKey);
 
     // Log audit
     await prisma.auditLog.create({
@@ -313,7 +332,7 @@ export class AuthService {
     try {
       await sendPasswordResetEmail(user.email, resetToken);
     } catch (error) {
-      console.error("Failed to send password reset email:", error);
+      logger.error("Failed to send password reset email:", error);
     }
   }
 

@@ -1,27 +1,25 @@
 import jwt, { SignOptions } from "jsonwebtoken";
 import { TokenPayload, RefreshTokenPayload } from "@app/shared-types";
+import { config } from "./env";
 
 export const generateAccessToken = (payload: TokenPayload): string => {
   const options: SignOptions = {
-    expiresIn: process.env.JWT_EXPIRES_IN || "15m",
+    expiresIn: config.jwt.expiresIn,
   } as SignOptions;
-  return jwt.sign(payload, process.env.JWT_SECRET!, options);
+  return jwt.sign(payload, config.jwt.secret, options);
 };
 
 export const generateRefreshToken = (payload: RefreshTokenPayload): string => {
   const options: SignOptions = {
-    expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "7d",
+    expiresIn: config.jwt.refreshExpiresIn,
   } as SignOptions;
-  return jwt.sign(payload, process.env.JWT_REFRESH_SECRET!, options);
+  return jwt.sign(payload, config.jwt.secret, options);
 };
 
 export const verifyAccessToken = (token: string): TokenPayload => {
-  return jwt.verify(token, process.env.JWT_SECRET!) as TokenPayload;
+  return jwt.verify(token, config.jwt.secret) as TokenPayload;
 };
 
 export const verifyRefreshToken = (token: string): RefreshTokenPayload => {
-  return jwt.verify(
-    token,
-    process.env.JWT_REFRESH_SECRET!
-  ) as RefreshTokenPayload;
+  return jwt.verify(token, config.jwt.secret) as RefreshTokenPayload;
 };

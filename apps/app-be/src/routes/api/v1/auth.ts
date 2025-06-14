@@ -6,7 +6,16 @@ import {
   registerSchema,
   loginSchema,
   refreshTokenSchema,
+  emailVerificationSchema,
+  passwordResetRequestSchema,
+  passwordResetSchema,
 } from "../../../middleware/validation/schemas/authSchemas";
+import {
+  authLimiter,
+  createAccountLimiter,
+  passwordResetLimiter,
+  emailVerificationLimiter,
+} from "../../../middleware/security/rateLimiter";
 
 const router = Router();
 
@@ -46,7 +55,7 @@ const router = Router();
  *       409:
  *         description: User already exists
  */
-router.post("/register", registerSchema, validate, authController.register);
+router.post("/register", createAccountLimiter, registerSchema, validate, authController.register);
 
 /**
  * @swagger
@@ -77,7 +86,7 @@ router.post("/register", registerSchema, validate, authController.register);
  *       401:
  *         description: Invalid credentials
  */
-router.post("/login", loginSchema, validate, authController.login);
+router.post("/login", authLimiter, loginSchema, validate, authController.login);
 
 /**
  * @swagger
@@ -166,7 +175,7 @@ router.get("/profile", authenticate, authController.getProfile);
  *       400:
  *         description: Invalid token
  */
-router.post("/verify-email", authController.verifyEmail);
+router.post("/verify-email", emailVerificationLimiter, emailVerificationSchema, validate, authController.verifyEmail);
 
 /**
  * @swagger
@@ -191,7 +200,7 @@ router.post("/verify-email", authController.verifyEmail);
  *       200:
  *         description: Password reset email sent if email exists
  */
-router.post("/request-password-reset", authController.requestPasswordReset);
+router.post("/request-password-reset", passwordResetLimiter, passwordResetRequestSchema, validate, authController.requestPasswordReset);
 
 /**
  * @swagger
@@ -222,6 +231,6 @@ router.post("/request-password-reset", authController.requestPasswordReset);
  *       400:
  *         description: Invalid or expired token
  */
-router.post("/reset-password", authController.resetPassword);
+router.post("/reset-password", passwordResetLimiter, passwordResetSchema, validate, authController.resetPassword);
 
 export default router;

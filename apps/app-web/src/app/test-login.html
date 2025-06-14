@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login Test</title>
+</head>
+<body>
+  <h1>Login Test</h1>
+  <button id="testBtn">Test Login</button>
+  <div id="result"></div>
+  
+  <script>
+    document.getElementById('testBtn').addEventListener('click', async () => {
+      const resultDiv = document.getElementById('result');
+      
+      try {
+        resultDiv.innerHTML = 'Testing login...';
+        
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: 'user1@example.com',
+            password: 'Password123'
+          }),
+          credentials: 'include'
+        });
+        
+        const data = await response.json();
+        
+        resultDiv.innerHTML = `
+          <p>Status: ${response.status}</p>
+          <p>Response: <pre>${JSON.stringify(data, null, 2)}</pre></p>
+        `;
+        
+        if (response.ok) {
+          // Test if we can access the profile endpoint
+          const profileResponse = await fetch('/api/auth/profile', {
+            credentials: 'include'
+          });
+          const profileData = await profileResponse.json();
+          
+          resultDiv.innerHTML += `
+            <p>Profile Status: ${profileResponse.status}</p>
+            <p>Profile Response: <pre>${JSON.stringify(profileData, null, 2)}</pre></p>
+          `;
+        }
+      } catch (error) {
+        resultDiv.innerHTML = `Error: ${error.message}`;
+        console.error('Login error:', error);
+      }
+    });
+  </script>
+</body>
+</html>

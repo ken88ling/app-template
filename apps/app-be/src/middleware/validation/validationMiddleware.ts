@@ -10,9 +10,6 @@ export const validate = (
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
-    console.log("Validation errors:", errors.array());
-    console.log("Request body:", req.body);
-
     const formattedErrors = errors
       .array()
       .reduce((acc: any, error: ValidationError) => {

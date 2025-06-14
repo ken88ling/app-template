@@ -68,9 +68,9 @@ const useAuthProvider = () => {
       const authData = await authService.register(data);
       setUser(authData.user);
       router.push("/");
-    } catch (error) {
-      const err = error as { message?: string };
-      throw new Error(err.message || "Registration failed");
+    } catch (error: any) {
+      // Pass through the full error structure including details
+      throw error;
     }
   }, [router]);
 

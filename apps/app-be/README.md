@@ -9,6 +9,8 @@ A modern, scalable backend API template built with Node.js, Express, TypeScript,
   - Email verification
   - Password reset functionality
   - Role-based access control (SUPER_ADMIN, MANAGER, USER)
+  - Rate limiting for security
+  - Strong password policies
 
 - **User Management**
   - User registration and login
@@ -31,11 +33,25 @@ A modern, scalable backend API template built with Node.js, Express, TypeScript,
   - Swagger/OpenAPI documentation
   - Interactive API testing interface
 
-- **Security**
+- **Security & Performance**
   - Password hashing with bcrypt
-  - Input validation
+  - Hashed refresh tokens
+  - Input validation with express-validator
   - Error handling middleware
   - CORS configuration
+  - Rate limiting middleware
+  - Structured logging with Winston
+  - Redis caching for authentication
+
+- **Testing**
+  - Jest test framework
+  - Unit and integration tests
+  - Test coverage reporting
+
+- **Development Tools**
+  - Docker Compose for Redis
+  - Environment variable validation
+  - Comprehensive error handling
 
 ## Tech Stack
 
@@ -43,16 +59,21 @@ A modern, scalable backend API template built with Node.js, Express, TypeScript,
 - **Framework**: Express.js
 - **Language**: TypeScript
 - **Database**: SQLite with Prisma ORM
+- **Cache**: Redis (optional)
 - **Authentication**: JWT
 - **Documentation**: Swagger/OpenAPI
 - **Email**: Nodemailer
 - **Validation**: express-validator
+- **Logging**: Winston
+- **Testing**: Jest + Supertest
+- **Containerization**: Docker Compose
 
 ## Getting Started
 
 ### Prerequisites
 
 - Node.js 18+ or Bun
+- Docker (for Redis, optional)
 - SQLite (included by default)
 
 ### Installation
@@ -77,45 +98,62 @@ cp .env.example .env
 
 Edit `.env` with your configuration:
 ```env
-# Database
-DATABASE_URL="file:./prisma/dev.db"
-
-# JWT Secrets
-JWT_SECRET="your-super-secret-jwt-key"
-JWT_REFRESH_SECRET="your-super-secret-refresh-key"
-
-# Email Configuration
-EMAIL_USER="your-email@gmail.com"
-EMAIL_PASS="your-app-specific-password"
-
-# App Configuration
-APP_NAME="Your App Name"
-APP_URL="http://localhost:4000"
+# Server
+NODE_ENV=development
 PORT=4000
+
+# Database
+DATABASE_URL="file:./dev.db"
+
+# JWT (Generate with: openssl rand -base64 32)
+JWT_SECRET=your-super-secret-jwt-key-min-32-chars-long
+JWT_EXPIRES_IN=15m
+JWT_REFRESH_EXPIRES_IN=7d
+
+# Email (Optional - for email functionality)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
+EMAIL_FROM=noreply@app.com
+
+# Redis (Optional - for caching)
+REDIS_URL=redis://localhost:6379
+
+# CORS
+CORS_ORIGIN=http://localhost:3001,http://localhost:3002
 ```
 
-4. Generate Prisma client:
+4. Start Redis (optional but recommended):
+```bash
+# Start Redis using Docker
+bun run docker:start
+# Or manually: docker-compose up -d
+```
+
+5. Generate Prisma client:
 ```bash
 bun prisma generate
 # or
 npx prisma generate
 ```
 
-5. Run database migrations:
+6. Run database migrations:
 ```bash
 bun prisma migrate dev
 # or
 npx prisma migrate dev
 ```
 
-6. Seed the database (optional):
+7. Seed the database (optional):
 ```bash
 bun run prisma:seed
 # or
 npm run prisma:seed
 ```
 
-7. Start the development server:
+8. Start the development server:
 ```bash
 bun dev
 # or
@@ -123,6 +161,37 @@ npm run dev
 ```
 
 The API will be available at `http://localhost:4000`
+
+## Docker Services
+
+### Redis Cache
+
+Start Redis with Docker Compose:
+
+```bash
+# Start Redis only
+bun run docker:start
+
+# Start all development services (Redis + PostgreSQL + GUIs)
+bun run docker:start-all
+
+# Check service status
+bun run docker:status
+
+# View logs
+bun run docker:logs
+
+# Stop services
+bun run docker:stop
+```
+
+**Available Services:**
+- **Redis**: `localhost:6379` (caching)
+- **Redis Commander**: `http://localhost:8081` (Redis GUI)
+- **PostgreSQL**: `localhost:5432` (optional database)
+- **pgAdmin**: `http://localhost:8082` (PostgreSQL GUI)
+
+See [DOCKER.md](./DOCKER.md) for detailed Docker usage instructions.
 
 ## Database Management
 
@@ -155,12 +224,32 @@ bun run prisma:seed
 3. **Generate client**: Automatically happens after migration
 4. **Update code**: Use the new fields in your TypeScript code
 
-### Important Notes
+## Testing
 
-- SQLite doesn't support native enums, so they're stored as strings
-- DateTime fields automatically include seconds and are stored in ISO 8601 format
-- The database file is located at `prisma/dev.db`
-- Migrations are stored in `prisma/migrations/`
+### Running Tests
+
+```bash
+# Run all tests
+bun test
+
+# Run unit tests only
+bun run test:unit
+
+# Run integration tests only
+bun run test:integration
+
+# Run tests with coverage
+bun run test:coverage
+
+# Run tests in watch mode
+bun run test:watch
+```
+
+### Test Structure
+
+- **Unit Tests**: `src/__tests__/unit/` - Test individual functions and utilities
+- **Integration Tests**: `src/__tests__/integration/` - Test API endpoints
+- **Setup**: `src/__tests__/setup.ts` - Test configuration and mocks
 
 ## API Documentation
 
@@ -176,6 +265,7 @@ src/
 ├── app.ts                    # Express app configuration
 ├── server.ts                 # Server entry point
 ├── config/                   # Configuration files
+│   ├── env.ts               # Environment validation
 │   ├── jwt.ts               # JWT configuration
 │   └── swagger.ts           # Swagger configuration
 ├── controllers/              # Route controllers
@@ -187,30 +277,52 @@ src/
 ├── middleware/              # Express middleware
 │   ├── auth/                # Authentication middleware
 │   ├── error/               # Error handling middleware
+│   ├── security/            # Security middleware (rate limiting)
 │   └── validation/          # Request validation
-├── models/                  # TypeScript interfaces and types
-│   ├── interfaces/          # Data interfaces
-│   ├── types/               # Type definitions
-│   └── enums/               # Enum definitions
 ├── routes/                  # API routes
 │   └── api/v1/              # Version 1 API routes
 ├── services/                # Business logic
 │   ├── auth/                # Authentication services
+│   ├── cache.ts             # Cache service
 │   └── user/                # User services
-└── utils/                   # Utility functions
-    ├── auth.ts              # Authentication utilities
-    └── email.ts             # Email utilities
+├── utils/                   # Utility functions
+│   ├── auth.ts              # Authentication utilities
+│   ├── email.ts             # Email utilities
+│   └── logger.ts            # Structured logging
+└── __tests__/               # Test files
+    ├── setup.ts             # Test configuration
+    ├── unit/                # Unit tests
+    └── integration/         # Integration tests
 ```
 
 ## Available Scripts
 
+### Development
 - `bun dev` - Start development server with hot reload
 - `bun build` - Build for production
 - `bun start` - Start production server
+- `bun lint` - Run ESLint
+- `bun format` - Format code with Prettier
+
+### Database
 - `bun prisma:generate` - Generate Prisma client
 - `bun prisma:migrate` - Run database migrations
 - `bun prisma:studio` - Open Prisma Studio GUI
 - `bun prisma:seed` - Seed database with sample data
+
+### Testing
+- `bun test` - Run all tests
+- `bun test:unit` - Run unit tests
+- `bun test:integration` - Run integration tests
+- `bun test:coverage` - Run tests with coverage
+- `bun test:watch` - Run tests in watch mode
+
+### Docker
+- `bun docker:start` - Start Redis
+- `bun docker:start-all` - Start all services
+- `bun docker:stop` - Stop Redis
+- `bun docker:status` - Check service status
+- `bun docker:logs` - View service logs
 
 ## API Endpoints
 
@@ -234,30 +346,62 @@ src/
 - `PUT /api/v1/users/my-profile` - Update current user profile (requires auth)
 - `POST /api/v1/users/change-password` - Change password (requires auth)
 
+## Security Features
+
+### Rate Limiting
+- **General API**: 100 requests per 15 minutes
+- **Authentication**: 5 attempts per 15 minutes
+- **Account Creation**: 3 accounts per hour per IP
+- **Password Reset**: 3 requests per hour per IP
+- **Email Verification**: 5 requests per hour per IP
+
+### Password Policy
+- Minimum 8 characters
+- Must contain: uppercase, lowercase, number, special character
+- Blacklisted common passwords
+- Different from previous password
+
+### Token Security
+- Access tokens: 15 minutes expiry
+- Refresh tokens: 7 days expiry, hashed in database
+- Secure token generation with crypto module
+
+### Caching Strategy
+- User authentication data cached for 5 minutes
+- Cache invalidation on logout and profile updates
+- Graceful degradation when Redis unavailable
+
 ## Test Credentials
 
 After running the seed script, you can use these credentials:
 
 | Role | Email | Password |
 |------|-------|----------|
-| Super Admin | super.admin@example.com | Password123 |
-| Manager | manager@example.com | Password123 |
-| User | user1@example.com | Password123 |
-| User | user2@example.com | Password123 |
-| User (Unverified) | user3@example.com | Password123 |
+| Super Admin | super.admin@example.com | NewPass@123 |
+| Manager | manager@example.com | NewPass@123 |
+| User | user1@example.com | NewPass@123 |
+| User | user2@example.com | NewPass@123 |
+| User (Unverified) | user3@example.com | NewPass@123 |
 
 ## Environment Variables
 
 | Variable | Description | Required | Default |
 |----------|-------------|----------|---------|
-| DATABASE_URL | Database connection string | Yes | - |
-| JWT_SECRET | Secret key for JWT tokens | Yes | - |
-| JWT_REFRESH_SECRET | Secret key for refresh tokens | Yes | - |
-| EMAIL_USER | SMTP email address | Yes | - |
-| EMAIL_PASS | SMTP password | Yes | - |
-| APP_NAME | Application name | No | "App Template" |
-| APP_URL | Application URL | No | "http://localhost:4000" |
+| NODE_ENV | Environment (development/production/test) | No | development |
 | PORT | Server port | No | 4000 |
+| DATABASE_URL | Database connection string | Yes | - |
+| JWT_SECRET | Secret key for JWT tokens (min 32 chars) | Yes | - |
+| JWT_EXPIRES_IN | Access token expiry | No | 15m |
+| JWT_REFRESH_EXPIRES_IN | Refresh token expiry | No | 7d |
+| SMTP_HOST | Email SMTP host | No | - |
+| SMTP_PORT | Email SMTP port | No | 587 |
+| SMTP_USER | SMTP username | No | - |
+| SMTP_PASS | SMTP password | No | - |
+| EMAIL_FROM | From email address | No | noreply@app.com |
+| CORS_ORIGIN | Allowed CORS origins | No | * |
+| REDIS_URL | Redis connection URL | No | - |
+| FRONTEND_URL | Frontend application URL | No | http://localhost:3001 |
+| ADMIN_URL | Admin panel URL | No | http://localhost:3002 |
 
 ## Database Schema
 
@@ -269,9 +413,10 @@ model User {
   password               String
   firstName              String
   lastName               String
+  profilePhoto           String?
   role                   String    @default("USER")
   status                 String    @default("PENDING_VERIFICATION")
-  refreshToken           String?
+  refreshToken           String?   // Hashed for security
   lastLoginAt            DateTime?
   emailVerificationToken String?
   emailVerifiedAt        DateTime?
@@ -287,26 +432,40 @@ model User {
 - **UserRole**: SUPER_ADMIN, MANAGER, USER
 - **UserStatus**: ACTIVE, INACTIVE, SUSPENDED, PENDING_VERIFICATION
 
+## Monitoring & Logging
+
+### Structured Logging
+- **Winston logger** with multiple transports
+- **Log files**: `logs/error.log`, `logs/combined.log`
+- **Log levels**: error, warn, info, http, debug
+- **Request logging** with Morgan integration
+
+### Health Check
+```bash
+curl http://localhost:4000/health
+```
+
 ## Extending the Template
 
 ### Adding New Features
 
 1. **Create new models** in `prisma/schema.prisma`
 2. **Run migrations**: `bun prisma migrate dev --name your_feature`
-3. **Create interfaces** in `src/models/interfaces/`
-4. **Create services** in `src/services/`
-5. **Create controllers** in `src/controllers/`
-6. **Add routes** in `src/routes/api/v1/`
-7. **Update Swagger docs** in route files
+3. **Create services** in `src/services/`
+4. **Create controllers** in `src/controllers/`
+5. **Add routes** in `src/routes/api/v1/`
+6. **Add validation schemas** in `src/middleware/validation/schemas/`
+7. **Write tests** in `src/__tests__/`
+8. **Update Swagger docs** in route files
 
 ### Switching Databases
 
-To switch from SQLite to another database:
+To switch from SQLite to PostgreSQL:
 
 1. Update `datasource` in `prisma/schema.prisma`:
 ```prisma
 datasource db {
-  provider = "postgresql" // or "mysql", "mongodb", etc.
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 ```
@@ -316,19 +475,27 @@ datasource db {
 DATABASE_URL="postgresql://user:password@localhost:5432/mydb"
 ```
 
-3. If using PostgreSQL/MySQL, change string enums back to native enums:
-```prisma
-enum UserRole {
-  SUPER_ADMIN
-  MANAGER
-  USER
-}
+3. Use the provided PostgreSQL Docker service:
+```bash
+bun run docker:start-all
 ```
 
 4. Run migrations:
 ```bash
 bun prisma migrate dev
 ```
+
+## Performance Optimization
+
+### Caching Strategy
+- **User authentication**: Cached for 5 minutes
+- **Database queries**: Consider implementing query result caching
+- **Static data**: Cache configuration and lookup data
+
+### Database Optimization
+- **Indexes**: Added on frequently queried fields
+- **Connection pooling**: Configured for production
+- **Query optimization**: Use Prisma's query engine features
 
 ## Troubleshooting
 
@@ -350,15 +517,42 @@ bun prisma migrate dev
    - Check Gmail app-specific password
    - Enable "Less secure app access" or use OAuth2
 
+5. **Redis Connection Issues**:
+   ```bash
+   # Check if Redis is running
+   bun run docker:status
+   
+   # Restart Redis
+   bun run docker:stop
+   bun run docker:start
+   ```
+
+6. **Rate Limiting Issues**: Clear rate limit data:
+   ```bash
+   # Connect to Redis and flush data
+   docker exec -it app-be-redis redis-cli FLUSHALL
+   ```
+
+### Development Tips
+
+1. **Environment Validation**: The app validates all environment variables at startup
+2. **Logging**: Check `logs/` directory for detailed error information
+3. **Testing**: Run tests before committing changes
+4. **Debugging**: Use `bun run dev` for hot reloading during development
+
 ## Security Considerations
 
-- Always use environment variables for sensitive data
-- Keep dependencies up to date
-- Use HTTPS in production
-- Implement rate limiting for API endpoints
-- Add request logging and monitoring
-- Consider implementing API versioning
-- Use proper CORS configuration for production
+- ✅ **Rate limiting** implemented for all auth endpoints
+- ✅ **Strong password policies** enforced
+- ✅ **Refresh tokens hashed** before database storage
+- ✅ **Environment validation** at startup
+- ✅ **Structured logging** for audit trails
+- ✅ **Input validation** on all endpoints
+- ✅ **CORS configuration** for cross-origin requests
+- ✅ **Security headers** with Helmet.js
+- ⚠️ **HTTPS**: Use in production
+- ⚠️ **API monitoring**: Consider implementing in production
+- ⚠️ **Dependency updates**: Keep dependencies current
 
 ## License
 

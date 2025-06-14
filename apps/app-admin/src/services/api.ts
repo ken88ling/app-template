@@ -77,7 +77,7 @@ class ApiService {
 
 // Create instances for different API endpoints
 export const internalApi = new ApiService("/api");
-export const externalApi = new ApiService(
+export const api = new ApiService(
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1"
 );
 

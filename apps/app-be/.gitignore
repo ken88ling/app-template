@@ -25,6 +25,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
+server.log
 
 # OS
 .DS_Store
@@ -41,6 +42,8 @@ Thumbs.db
 *.db
 *.db-journal
 prisma/migrations/dev/
+test.db
+test.db-journal
 
 # Uploads
 uploads/
@@ -52,3 +55,7 @@ temp/
 
 # Bun
 bun.lockb
+
+# Docker
+.docker/
+docker-volumes/

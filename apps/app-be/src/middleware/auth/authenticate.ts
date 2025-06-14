@@ -2,8 +2,10 @@ import { Request, Response, NextFunction } from "express";
 import { verifyAccessToken } from "../../config/jwt";
 import { extractBearerToken } from "../../utils/auth";
 import { ApiError } from "../error/errorHandler";
+import logger from "../../utils/logger";
 import prisma from "../../database/client";
 import { UserRole, UserStatus } from "@app/shared-types";
+import cacheService from "../../services/cache";
 
 export interface AuthRequest<
   P = any,
@@ -35,16 +37,30 @@ export const authenticate = async (
     // Verify token
     const payload = verifyAccessToken(token);
 
-    // Get user
-    const user = await prisma.user.findUnique({
-      where: { id: payload.userId },
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        status: true,
-      },
-    });
+    // Try to get user from cache first
+    const cacheKey = cacheService.generateKey("user", payload.userId);
+    const cachedUser = await cacheService.get(cacheKey);
+    
+    let user;
+    if (cachedUser) {
+      user = JSON.parse(cachedUser);
+    } else {
+      // Get user from database
+      user = await prisma.user.findUnique({
+        where: { id: payload.userId },
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          status: true,
+        },
+      });
+
+      if (user) {
+        // Cache user for 5 minutes
+        await cacheService.set(cacheKey, JSON.stringify(user), 300);
+      }
+    }
 
     if (!user) {
       throw new ApiError("User not found", 401, "USER_NOT_FOUND");
@@ -102,8 +118,8 @@ export const optionalAuth = async (
         };
       }
     }
-  } catch {
-    console.error("Ignore errors for optional auth");
+  } catch (error) {
+    logger.debug("Optional auth error ignored:", error);
     // Ignore errors for optional auth
   }
 

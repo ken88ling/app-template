@@ -1,12 +1,11 @@
-import dotenv from "dotenv";
+import { config } from "./config/env";
 import app from "./app";
+import logger from "./utils/logger";
 
-// Load environment variables
-dotenv.config();
-
-const PORT = process.env.PORT || 4000;
+const PORT = config.port;
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server is running on port ${PORT}`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
+  logger.info(`🚀 Server is running on port ${PORT}`);
+  logger.info(`🌍 Environment: ${config.env}`);
+  logger.info(`✅ All environment variables validated`);
 });

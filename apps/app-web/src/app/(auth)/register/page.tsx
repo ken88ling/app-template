@@ -14,22 +14,26 @@ export default function RegisterPage() {
     confirmPassword: "",
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     });
+    // Clear field-specific error when user starts typing
+    if (errors[e.target.name]) {
+      setErrors({ ...errors, [e.target.name]: "" });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    setErrors({});
 
     // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
+      setErrors({ confirmPassword: "Passwords do not match" });
       return;
     }
 
@@ -38,8 +42,13 @@ export default function RegisterPage() {
     try {
       await register(formData);
       // The register function in AuthContext handles the redirect
-    } catch {
-      setError("Registration failed. Please try again.");
+    } catch (error: any) {
+      // Parse detailed validation errors from backend
+      if (error.details && typeof error.details === 'object') {
+        setErrors(error.details);
+      } else {
+        setErrors({ general: error.message || "Registration failed. Please try again." });
+      }
     } finally {
       setLoading(false);
     }
@@ -54,9 +63,9 @@ export default function RegisterPage() {
           </h2>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
+          {errors.general && (
             <div className="rounded-md bg-red-50 p-4">
-              <p className="text-sm text-red-800">{error}</p>
+              <p className="text-sm text-red-800">{errors.general}</p>
             </div>
           )}
 
@@ -76,9 +85,14 @@ export default function RegisterPage() {
                   required
                   value={formData.firstName}
                   onChange={handleChange}
-                  className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                  className={`mt-1 appearance-none relative block w-full px-3 py-2 border placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm ${
+                    errors.firstName ? 'border-red-300' : 'border-gray-300'
+                  }`}
                   placeholder="John"
                 />
+                {errors.firstName && (
+                  <p className="mt-1 text-sm text-red-600">{errors.firstName}</p>
+                )}
               </div>
               <div>
                 <label
@@ -94,9 +108,14 @@ export default function RegisterPage() {
                   required
                   value={formData.lastName}
                   onChange={handleChange}
-                  className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                  className={`mt-1 appearance-none relative block w-full px-3 py-2 border placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm ${
+                    errors.lastName ? 'border-red-300' : 'border-gray-300'
+                  }`}
                   placeholder="Doe"
                 />
+                {errors.lastName && (
+                  <p className="mt-1 text-sm text-red-600">{errors.lastName}</p>
+                )}
               </div>
             </div>
 
@@ -115,9 +134,14 @@ export default function RegisterPage() {
                 required
                 value={formData.email}
                 onChange={handleChange}
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                className={`mt-1 appearance-none relative block w-full px-3 py-2 border placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm ${
+                  errors.email ? 'border-red-300' : 'border-gray-300'
+                }`}
                 placeholder="john.doe@example.com"
               />
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+              )}
             </div>
 
             <div>
@@ -135,9 +159,43 @@ export default function RegisterPage() {
                 required
                 value={formData.password}
                 onChange={handleChange}
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                className={`mt-1 appearance-none relative block w-full px-3 py-2 border placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm ${
+                  errors.password ? 'border-red-300' : 'border-gray-300'
+                }`}
                 placeholder="••••••••"
               />
+              {errors.password && (
+                <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+              )}
+              {formData.password && (
+                <div className="mt-2">
+                  <div className="text-xs text-gray-600 mb-1">
+                    Password requirements:
+                  </div>
+                  <div className="space-y-1 text-xs">
+                    <div className={`flex items-center ${formData.password.length >= 8 ? 'text-green-600' : 'text-gray-400'}`}>
+                      <span className="mr-1">{formData.password.length >= 8 ? '✓' : '○'}</span>
+                      At least 8 characters
+                    </div>
+                    <div className={`flex items-center ${/[a-z]/.test(formData.password) ? 'text-green-600' : 'text-gray-400'}`}>
+                      <span className="mr-1">{/[a-z]/.test(formData.password) ? '✓' : '○'}</span>
+                      Lowercase letter
+                    </div>
+                    <div className={`flex items-center ${/[A-Z]/.test(formData.password) ? 'text-green-600' : 'text-gray-400'}`}>
+                      <span className="mr-1">{/[A-Z]/.test(formData.password) ? '✓' : '○'}</span>
+                      Uppercase letter
+                    </div>
+                    <div className={`flex items-center ${/\d/.test(formData.password) ? 'text-green-600' : 'text-gray-400'}`}>
+                      <span className="mr-1">{/\d/.test(formData.password) ? '✓' : '○'}</span>
+                      Number
+                    </div>
+                    <div className={`flex items-center ${/[@$!%*?&]/.test(formData.password) ? 'text-green-600' : 'text-gray-400'}`}>
+                      <span className="mr-1">{/[@$!%*?&]/.test(formData.password) ? '✓' : '○'}</span>
+                      Special character (@$!%*?&)
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>
@@ -155,9 +213,14 @@ export default function RegisterPage() {
                 required
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                className={`mt-1 appearance-none relative block w-full px-3 py-2 border placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm ${
+                  errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
+                }`}
                 placeholder="••••••••"
               />
+              {errors.confirmPassword && (
+                <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>
+              )}
             </div>
           </div>
 

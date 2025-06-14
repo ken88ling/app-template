@@ -8,11 +8,11 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    setErrors({});
     setLoading(true);
 
     try {
@@ -27,14 +27,20 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error?.message || "Invalid credentials");
+        // Parse detailed validation errors from backend
+        if (data.error?.details && typeof data.error.details === 'object') {
+          setErrors(data.error.details);
+        } else {
+          setErrors({ general: data.error?.message || "Invalid credentials" });
+        }
+        return;
       }
 
       // Redirect to home on success
       router.push("/");
     } catch (err) {
       const error = err as { message?: string };
-      setError(error.message || "Login failed");
+      setErrors({ general: error.message || "Login failed" });
     } finally {
       setLoading(false);
     }
@@ -52,9 +58,9 @@ export default function LoginPage() {
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
+          {errors.general && (
             <div className="border border-black p-4">
-              <p className="text-sm text-black">{error}</p>
+              <p className="text-sm text-black">{errors.general}</p>
             </div>
           )}
 
@@ -70,10 +76,18 @@ export default function LoginPage() {
                 autoComplete="email"
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-2 border border-black placeholder-black text-black bg-white focus:outline-none focus:border-black sm:text-sm"
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (errors.email) setErrors({ ...errors, email: "" });
+                }}
+                className={`w-full px-3 py-2 border placeholder-black text-black bg-white focus:outline-none focus:border-black sm:text-sm ${
+                  errors.email ? 'border-red-500' : 'border-black'
+                }`}
                 placeholder="Email address"
               />
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+              )}
             </div>
             <div>
               <label htmlFor="password" className="sr-only">
@@ -86,10 +100,18 @@ export default function LoginPage() {
                 autoComplete="current-password"
                 required
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-black placeholder-black text-black bg-white focus:outline-none focus:border-black sm:text-sm"
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (errors.password) setErrors({ ...errors, password: "" });
+                }}
+                className={`w-full px-3 py-2 border placeholder-black text-black bg-white focus:outline-none focus:border-black sm:text-sm ${
+                  errors.password ? 'border-red-500' : 'border-black'
+                }`}
                 placeholder="Password"
               />
+              {errors.password && (
+                <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+              )}
             </div>
           </div>
 
