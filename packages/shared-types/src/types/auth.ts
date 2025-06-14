@@ -24,6 +24,15 @@ export interface AuthResponse {
   expiresIn: number;
 }
 
+export interface WebAuthResponse {
+  user: IUserPublic;
+  company?: {
+    id: string;
+    name: string;
+    code: string;
+  };
+}
+
 export interface RefreshTokenResponse {
   accessToken: string;
   refreshToken: string;

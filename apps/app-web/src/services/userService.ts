@@ -1,15 +1,12 @@
 import { internalApi } from "./api";
-import { IUserPublic, ApiResponse, PaginationParams, PaginatedResponse } from "@app/shared-types";
-
-interface UpdateProfileData {
-  firstName?: string;
-  lastName?: string;
-  phone?: string;
-  dateOfBirth?: string;
-  address?: string;
-  emergencyContact?: string;
-  department?: string;
-}
+import { 
+  IUserPublic, 
+  ApiResponse, 
+  PaginationParams, 
+  PaginatedResponse,
+  UpdateProfileData,
+  ProfilePhotoResponse
+} from "@app/shared-types";
 
 class UserService {
   /**
@@ -45,7 +42,7 @@ class UserService {
   /**
    * Upload profile photo
    */
-  async uploadProfilePhoto(file: File): Promise<{ url: string }> {
+  async uploadProfilePhoto(file: File): Promise<ProfilePhotoResponse> {
     const formData = new FormData();
     formData.append("photo", file);
 

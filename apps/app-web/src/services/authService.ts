@@ -4,16 +4,8 @@ import {
   RegisterRequest,
   IUserPublic,
   ApiResponse,
+  WebAuthResponse as AuthResponse,
 } from "@app/shared-types";
-
-export interface AuthResponse {
-  user: IUserPublic;
-  company?: {
-    id: string;
-    name: string;
-    code: string;
-  };
-}
 
 class AuthService {
   /**
