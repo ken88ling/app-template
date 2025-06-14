@@ -31,6 +31,12 @@ export interface IUserPublic {
   createdAt: Date;
 }
 
+export interface IUserAdmin extends IUserPublic {
+  phone?: string;
+  employeeId?: string;
+  department?: string;
+}
+
 export interface IUserAuth {
   id: string;
   email: string;

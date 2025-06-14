@@ -21,9 +21,14 @@ Import types, interfaces, and enums directly from the package:
 ```typescript
 import {
   IUser,
+  IUserPublic,
+  IUserAdmin,
   UserRole,
+  UserStatus,
   ApiResponse,
   LoginRequest,
+  WebAuthResponse,
+  AdminAuthResponse,
 } from "@app/shared-types";
 
 // Using interfaces
@@ -39,7 +44,25 @@ const user: IUser = {
   updatedAt: new Date(),
 };
 
-// Using types
+// Using admin-specific types
+const adminUser: IUserAdmin = {
+  ...user,
+  phone: "+1234567890",
+  employeeId: "EMP001",
+  department: "Engineering",
+};
+
+// Using authentication responses
+const webAuth: WebAuthResponse = {
+  user: user as IUserPublic,
+  company: {
+    id: "comp123",
+    name: "Tech Corp",
+    code: "TC001",
+  },
+};
+
+// Using API responses
 const response: ApiResponse<IUser> = {
   success: true,
   data: user,
@@ -57,12 +80,13 @@ if (user.role === UserRole.MANAGER) {
 ```
 src/
 ├── enums/          # All enumeration types
-│   └── index.ts    # UserRole, UserStatus, etc.
+│   └── index.ts    # UserRole, UserStatus, ErrorCode, HttpStatus
 ├── models/         # Domain model interfaces
-│   └── user.ts     # IUser, ICreateUser, IUpdateUser, etc.
+│   └── user.ts     # IUser, IUserPublic, IUserAdmin, ICreateUser, etc.
 ├── types/          # Request/Response and utility types
-│   ├── auth.ts     # LoginRequest, AuthResponse, etc.
-│   └── common.ts   # ApiResponse, PaginationParams, etc.
+│   ├── auth.ts     # LoginRequest, AuthResponse, WebAuthResponse, AdminAuthResponse
+│   ├── common.ts   # ApiResponse, PaginationParams, ErrorResponse
+│   └── user.ts     # UpdateProfileData, ProfilePhotoResponse
 └── index.ts        # Main export file
 ```
 
@@ -147,6 +171,26 @@ When you modify types:
 3. **Document complex types** - Add JSDoc comments for complex properties
 4. **Avoid circular dependencies** - Structure imports carefully
 5. **Version breaking changes** - Consider impact on all consuming projects
+
+## 🎆 Recent Updates
+
+### Type Centralization (Latest)
+
+All types have been centralized in this package to ensure consistency across applications:
+
+1. **Admin-specific types**:
+   - `IUserAdmin` - Extends IUserPublic with admin fields (phone, employeeId, department)
+   - `AdminAuthResponse` - Authentication response for admin portal
+
+2. **Web-specific types**:
+   - `WebAuthResponse` - Authentication response for web applications
+   - `UpdateProfileData` - User profile update fields
+   - `ProfilePhotoResponse` - Profile photo upload response
+
+3. **Common types**:
+   - All authentication types (LoginRequest, RegisterRequest, etc.)
+   - API response types (ApiResponse, ErrorResponse)
+   - Pagination types (PaginationParams, PaginatedResponse)
 
 ## 🧪 Examples
 

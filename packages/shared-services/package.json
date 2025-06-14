@@ -1,0 +1,29 @@
+{
+  "name": "@app/shared-services",
+  "version": "1.0.0",
+  "description": "Shared services for user operations across all apps",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "prepare": "bun run build"
+  },
+  "dependencies": {
+    "@app/shared-types": "file:../shared-types"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.10",
+    "typescript": "^5.2.2"
+  },
+  "files": [
+    "dist/**/*"
+  ],
+  "keywords": [
+    "shared",
+    "services",
+    "user"
+  ],
+  "license": "MIT"
+}

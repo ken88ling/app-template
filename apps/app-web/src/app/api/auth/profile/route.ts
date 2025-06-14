@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
+import { apiClient } from "@/services/apiClient";
+import { IUserPublic, ApiResponse } from "@app/shared-types";
 
 export async function GET() {
   try {
@@ -16,34 +15,40 @@ export async function GET() {
       );
     }
 
-    // Forward request to backend with token
-    const response = await fetch(`${API_BASE_URL}/auth/profile`, {
-      method: "GET",
+    // Use the same apiClient with auth header
+    const response = await apiClient.get<ApiResponse<IUserPublic>>("/auth/profile", {
       headers: {
         Authorization: `Bearer ${accessToken.value}`,
       },
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      // If token is invalid, clear cookies
-      if (response.status === 401) {
-        cookieStore.delete("accessToken");
-        cookieStore.delete("refreshToken");
-      }
-
+    if (!response.success || !response.data) {
       return NextResponse.json(
-        { error: data.error || { message: "Failed to get profile" } },
-        { status: response.status }
+        { error: { message: "Failed to get profile" } },
+        { status: 400 }
       );
     }
 
-    return NextResponse.json(data);
-  } catch {
+    return NextResponse.json({
+      success: true,
+      data: { user: response.data },
+    });
+  } catch (error: any) {
+    // If token is invalid, clear cookies
+    if (error.status === 401) {
+      const cookieStore = await cookies();
+      cookieStore.delete("accessToken");
+      cookieStore.delete("refreshToken");
+    }
+
     return NextResponse.json(
-      { error: { message: "Internal server error" } },
-      { status: 500 }
+      { 
+        error: { 
+          message: error.message || "Failed to get profile",
+          code: error.code 
+        } 
+      },
+      { status: error.status || 500 }
     );
   }
 }
