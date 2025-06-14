@@ -15,10 +15,11 @@ A Next.js-based admin portal with simple authentication and home page display. T
 
 - **Framework**: Next.js 15+ with App Router
 - **Language**: TypeScript
-- **Styling**: Tailwind CSS
+- **Styling**: Tailwind CSS v4 (beta)
 - **Authentication**: Cookie-based with JWT tokens
 - **Rendering**: Server-Side Rendering (SSR)
-- **API Integration**: RESTful API communication with gm-be backend
+- **API Integration**: RESTful API communication with app-be backend
+- **Type Safety**: Shared types from @app/shared-types package
 
 ## 📋 Prerequisites
 
@@ -55,8 +56,8 @@ Before running the admin portal, ensure you have:
 
 ### Admin Credentials
 
-- **Email**: `super.admin@example.com`
-- **Password**: `Password123`
+- **Super Admin**: `super.admin@example.com` / `Password123`
+- **Manager**: `manager@example.com` / `Password123`
 
 ### Security Features
 
@@ -73,14 +74,14 @@ src/
 │   ├── api/               # API routes for authentication
 │   │   └── auth/         # Login, logout, profile endpoints
 │   ├── login/            # Login page
-│   ├── globals.css       # Global styles
+│   ├── globals.css       # Global styles with Tailwind v4
 │   ├── layout.tsx        # Root layout
 │   └── page.tsx          # Home page with welcome message and logout
 ├── contexts/              # React contexts
 │   └── AuthContext.tsx   # Authentication state management
 └── services/             # API services
-    ├── api.ts            # Generic API client
-    └── authService.ts    # Authentication service
+    ├── api.ts            # Generic API client (fetch-based)
+    └── authService.ts    # Authentication service using shared types
 ```
 
 ## 🔧 Key Components
@@ -105,9 +106,10 @@ src/
 
 ### External API Integration (Backend)
 
-- Connects to `gm-be` backend running on port 4000
+- Connects to `app-be` backend running on port 4000
 - Validates credentials against user database
 - Fetches admin profile and permissions
+- Admin role validation (MANAGER or SUPER_ADMIN required)
 
 ## 🔄 Authentication Flow
 
@@ -202,7 +204,10 @@ NODE_ENV=production
 - Server-side rendering eliminates client-side authentication issues
 - Simple home page design with logout functionality
 - TypeScript provides type safety across the application
-- Tailwind CSS enables rapid UI development
+- Tailwind CSS v4 (beta) with custom theme configuration
+- All types imported from centralized @app/shared-types package
+- Admin-specific types: IUserAdmin extends IUserPublic with admin fields
+- Uses AdminAuthResponse for authentication responses
 
 ## 🤝 Contributing
 
