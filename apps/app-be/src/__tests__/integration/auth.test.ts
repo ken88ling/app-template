@@ -1,7 +1,7 @@
 import request from "supertest";
 import app from "../../app";
 import prisma from "../../database/client";
-import { UserRole, UserStatus } from "@app/shared-types";
+import { UserRole } from "@app/shared-types";
 
 describe("Auth API Integration Tests", () => {
   beforeAll(async () => {

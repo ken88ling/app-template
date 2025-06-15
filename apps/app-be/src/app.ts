@@ -10,7 +10,7 @@ import { notFound } from "./middleware/error/notFound";
 import routes from "./routes";
 import { config } from "./config/env";
 import { apiLimiter } from "./middleware/security/rateLimiter";
-import logger, { stream } from "./utils/logger";
+import { stream } from "./utils/logger";
 import cacheService from "./services/cache";
 
 const app: Application = express();
