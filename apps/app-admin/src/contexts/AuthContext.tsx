@@ -8,7 +8,7 @@ import { UserRole } from "@app/shared-types";
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (credentials: { email: string; password: string }) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -61,10 +61,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (credentials: { email: string; password: string }) => {
     try {
-      console.log("Attempting login for:", email);
-      const authData = await authService.login({ email, password });
+      console.log("Attempting login for:", credentials.email);
+      const authData = await authService.login(credentials);
       console.log("Login successful, user data:", authData.user);
 
       // Verify admin role

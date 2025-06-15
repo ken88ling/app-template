@@ -10,7 +10,10 @@ export async function POST(request: NextRequest) {
     // Use the same apiClient - it knows we're on server and will call backend directly
     const response = await apiClient.post<ApiResponse<AuthResponse>>("/auth/register", body);
 
-    if (!response.success || !response.data) {
+    // The interceptor returns response.data, so response is already ApiResponse<AuthResponse>
+    const data = response as unknown as ApiResponse<AuthResponse>;
+
+    if (!data.success || !data.data) {
       return NextResponse.json(
         { error: { message: "Registration failed" } },
         { status: 400 }
@@ -21,7 +24,7 @@ export async function POST(request: NextRequest) {
     const cookieStore = await cookies();
 
     // Access token
-    cookieStore.set("accessToken", response.data.accessToken, {
+    cookieStore.set("accessToken", data.data.accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
@@ -30,7 +33,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Refresh token
-    cookieStore.set("refreshToken", response.data.refreshToken, {
+    cookieStore.set("refreshToken", data.data.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
@@ -42,21 +45,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        user: response.data.user,
-        company: response.data.company,
+        user: data.data.user,
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Registration error:", error);
+    
+    const err = error as { message?: string; status?: number; code?: string };
     
     return NextResponse.json(
       { 
         error: { 
-          message: error.message || "Registration failed",
-          code: error.code 
+          message: err.message || "Registration failed",
+          code: err.code 
         } 
       },
-      { status: error.status || 500 }
+      { status: err.status || 500 }
     );
   }
 }

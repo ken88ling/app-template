@@ -19,11 +19,14 @@ class UserService {
       { headers }
     );
     
-    if (!response.data) {
+    // The interceptor returns response.data, so 'response' is already ApiResponse
+    const result = response as unknown as ApiResponse<IUserPublic>;
+    
+    if (!result.success || !result.data) {
       throw new Error("Invalid profile response");
     }
     
-    return response.data;
+    return result.data;
   }
 
   /**
@@ -37,11 +40,14 @@ class UserService {
       { headers }
     );
     
-    if (!response.data) {
+    // The interceptor returns response.data, so 'response' is already ApiResponse
+    const result = response as unknown as ApiResponse<IUserPublic>;
+    
+    if (!result.success || !result.data) {
       throw new Error("Invalid update response");
     }
     
-    return response.data;
+    return result.data;
   }
 
   /**
@@ -65,11 +71,14 @@ class UserService {
       }
     );
 
-    if (!response.data) {
+    // The interceptor returns response.data, so 'response' is already ApiResponse
+    const result = response as unknown as ApiResponse<ProfilePhotoResponse>;
+
+    if (!result.success || !result.data) {
       throw new Error("Failed to upload photo");
     }
 
-    return response.data;
+    return result.data;
   }
 
   /**
@@ -100,11 +109,14 @@ class UserService {
       { headers }
     );
     
-    if (!response.data) {
+    // The interceptor returns response.data, so 'response' is already ApiResponse
+    const result = response as unknown as ApiResponse<IUserPublic>;
+    
+    if (!result.success || !result.data) {
       throw new Error("Invalid user response");
     }
     
-    return response.data;
+    return result.data;
   }
 
   /**
@@ -118,18 +130,21 @@ class UserService {
     const headers = await getServerAuthHeaders();
     
     const response = await apiClient.get<ApiResponse<PaginatedResponse<IUserPublic>>>(
-      `/users`,
+      "/users",
       {
         params,
         headers
       }
     );
 
-    if (!response.data) {
+    // The interceptor returns response.data, so 'response' is already ApiResponse
+    const result = response as unknown as ApiResponse<PaginatedResponse<IUserPublic>>;
+
+    if (!result.success || !result.data) {
       throw new Error("Invalid users list response");
     }
 
-    return response.data;
+    return result.data;
   }
 }
 

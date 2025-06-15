@@ -15,10 +15,14 @@ class AuthService {
       "/auth/login",
       data
     );
-    if (!response.data) {
+    
+    // The interceptor returns response.data, so 'response' is already ApiResponse<AuthResponse>
+    const result = response as unknown as ApiResponse<AuthResponse>;
+    
+    if (!result.success || !result.data) {
       throw new Error("Login failed: No data received");
     }
-    return response.data;
+    return result.data;
   }
 
   /**
@@ -37,10 +41,14 @@ class AuthService {
       "/auth/profile",
       { headers }
     );
-    if (!response.data) {
+    
+    // The interceptor returns response.data, so 'response' is already ApiResponse
+    const result = response as unknown as ApiResponse<{ user: User }>;
+    
+    if (!result.success || !result.data) {
       throw new Error("Failed to get profile: No data received");
     }
-    return response.data.user;
+    return result.data.user;
   }
 }
 

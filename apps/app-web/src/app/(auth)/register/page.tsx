@@ -42,12 +42,15 @@ export default function RegisterPage() {
     try {
       await register(formData);
       // The register function in AuthContext handles the redirect
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as { details?: Record<string, string>; message?: string };
       // Parse detailed validation errors from backend
-      if (error.details && typeof error.details === 'object') {
-        setErrors(error.details);
+      if (err.details && typeof err.details === "object") {
+        setErrors(err.details);
       } else {
-        setErrors({ general: error.message || "Registration failed. Please try again." });
+        setErrors({
+          general: err.message || "Registration failed. Please try again.",
+        });
       }
     } finally {
       setLoading(false);
@@ -86,12 +89,14 @@ export default function RegisterPage() {
                   value={formData.firstName}
                   onChange={handleChange}
                   className={`mt-1 appearance-none relative block w-full px-3 py-2 border placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm ${
-                    errors.firstName ? 'border-red-300' : 'border-gray-300'
+                    errors.firstName ? "border-red-300" : "border-gray-300"
                   }`}
                   placeholder="John"
                 />
                 {errors.firstName && (
-                  <p className="mt-1 text-sm text-red-600">{errors.firstName}</p>
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.firstName}
+                  </p>
                 )}
               </div>
               <div>
@@ -109,7 +114,7 @@ export default function RegisterPage() {
                   value={formData.lastName}
                   onChange={handleChange}
                   className={`mt-1 appearance-none relative block w-full px-3 py-2 border placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm ${
-                    errors.lastName ? 'border-red-300' : 'border-gray-300'
+                    errors.lastName ? "border-red-300" : "border-gray-300"
                   }`}
                   placeholder="Doe"
                 />
@@ -135,7 +140,7 @@ export default function RegisterPage() {
                 value={formData.email}
                 onChange={handleChange}
                 className={`mt-1 appearance-none relative block w-full px-3 py-2 border placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm ${
-                  errors.email ? 'border-red-300' : 'border-gray-300'
+                  errors.email ? "border-red-300" : "border-gray-300"
                 }`}
                 placeholder="john.doe@example.com"
               />
@@ -160,7 +165,7 @@ export default function RegisterPage() {
                 value={formData.password}
                 onChange={handleChange}
                 className={`mt-1 appearance-none relative block w-full px-3 py-2 border placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm ${
-                  errors.password ? 'border-red-300' : 'border-gray-300'
+                  errors.password ? "border-red-300" : "border-gray-300"
                 }`}
                 placeholder="••••••••"
               />
@@ -173,24 +178,44 @@ export default function RegisterPage() {
                     Password requirements:
                   </div>
                   <div className="space-y-1 text-xs">
-                    <div className={`flex items-center ${formData.password.length >= 8 ? 'text-green-600' : 'text-gray-400'}`}>
-                      <span className="mr-1">{formData.password.length >= 8 ? '✓' : '○'}</span>
+                    <div
+                      className={`flex items-center ${formData.password.length >= 8 ? "text-green-600" : "text-gray-400"}`}
+                    >
+                      <span className="mr-1">
+                        {formData.password.length >= 8 ? "✓" : "○"}
+                      </span>
                       At least 8 characters
                     </div>
-                    <div className={`flex items-center ${/[a-z]/.test(formData.password) ? 'text-green-600' : 'text-gray-400'}`}>
-                      <span className="mr-1">{/[a-z]/.test(formData.password) ? '✓' : '○'}</span>
+                    <div
+                      className={`flex items-center ${/[a-z]/.test(formData.password) ? "text-green-600" : "text-gray-400"}`}
+                    >
+                      <span className="mr-1">
+                        {/[a-z]/.test(formData.password) ? "✓" : "○"}
+                      </span>
                       Lowercase letter
                     </div>
-                    <div className={`flex items-center ${/[A-Z]/.test(formData.password) ? 'text-green-600' : 'text-gray-400'}`}>
-                      <span className="mr-1">{/[A-Z]/.test(formData.password) ? '✓' : '○'}</span>
+                    <div
+                      className={`flex items-center ${/[A-Z]/.test(formData.password) ? "text-green-600" : "text-gray-400"}`}
+                    >
+                      <span className="mr-1">
+                        {/[A-Z]/.test(formData.password) ? "✓" : "○"}
+                      </span>
                       Uppercase letter
                     </div>
-                    <div className={`flex items-center ${/\d/.test(formData.password) ? 'text-green-600' : 'text-gray-400'}`}>
-                      <span className="mr-1">{/\d/.test(formData.password) ? '✓' : '○'}</span>
+                    <div
+                      className={`flex items-center ${/\d/.test(formData.password) ? "text-green-600" : "text-gray-400"}`}
+                    >
+                      <span className="mr-1">
+                        {/\d/.test(formData.password) ? "✓" : "○"}
+                      </span>
                       Number
                     </div>
-                    <div className={`flex items-center ${/[@$!%*?&]/.test(formData.password) ? 'text-green-600' : 'text-gray-400'}`}>
-                      <span className="mr-1">{/[@$!%*?&]/.test(formData.password) ? '✓' : '○'}</span>
+                    <div
+                      className={`flex items-center ${/[@$!%*?&]/.test(formData.password) ? "text-green-600" : "text-gray-400"}`}
+                    >
+                      <span className="mr-1">
+                        {/[@$!%*?&]/.test(formData.password) ? "✓" : "○"}
+                      </span>
                       Special character (@$!%*?&)
                     </div>
                   </div>
@@ -214,12 +239,14 @@ export default function RegisterPage() {
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 className={`mt-1 appearance-none relative block w-full px-3 py-2 border placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm ${
-                  errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
+                  errors.confirmPassword ? "border-red-300" : "border-gray-300"
                 }`}
                 placeholder="••••••••"
               />
               {errors.confirmPassword && (
-                <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.confirmPassword}
+                </p>
               )}
             </div>
           </div>

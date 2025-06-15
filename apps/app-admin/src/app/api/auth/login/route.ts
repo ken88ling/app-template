@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { apiClient } from "@/services/apiClient";
-import { LoginRequest, AuthResponse, ApiResponse, UserRole } from "@app/shared-types";
+import { LoginRequest, AuthResponse, AdminAuthResponse, IUserAdmin, ApiResponse, UserRole } from "@app/shared-types";
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,7 +10,10 @@ export async function POST(request: NextRequest) {
     // Use the same apiClient - it knows we're on server and will call backend directly
     const response = await apiClient.post<ApiResponse<AuthResponse>>("/auth/login", body);
 
-    if (!response.success || !response.data) {
+    // The interceptor returns response.data, so response is already ApiResponse<AuthResponse>
+    const data = response as unknown as ApiResponse<AuthResponse>;
+
+    if (!data.success || !data.data) {
       return NextResponse.json(
         { error: { message: "Login failed" } },
         { status: 400 }
@@ -19,8 +22,8 @@ export async function POST(request: NextRequest) {
 
     // Verify user is an admin or manager
     if (
-      response.data.user.role !== UserRole.MANAGER &&
-      response.data.user.role !== UserRole.SUPER_ADMIN
+      data.data.user.role !== UserRole.MANAGER &&
+      data.data.user.role !== UserRole.SUPER_ADMIN
     ) {
       return NextResponse.json(
         { error: { message: "Access denied. Admin privileges required." } },
@@ -31,10 +34,10 @@ export async function POST(request: NextRequest) {
     // Set secure HTTP-only cookies
     const cookieStore = await cookies();
 
-    console.log("Login API - Setting cookies for user:", response.data.user.email);
+    console.log("Login API - Setting cookies for user:", data.data.user.email);
 
     // Access token - shorter expiry
-    cookieStore.set("accessToken", response.data.accessToken, {
+    cookieStore.set("accessToken", data.data.accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
@@ -43,7 +46,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Refresh token - longer expiry
-    cookieStore.set("refreshToken", response.data.refreshToken, {
+    cookieStore.set("refreshToken", data.data.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
@@ -52,7 +55,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Admin role cookie for quick checks
-    cookieStore.set("adminRole", response.data.user.role, {
+    cookieStore.set("adminRole", data.data.user.role, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
@@ -62,25 +65,29 @@ export async function POST(request: NextRequest) {
 
     console.log("Login API - Cookies set successfully");
 
-    // Return user data without tokens
+    // Return user data without tokens, using AdminAuthResponse format
+    const adminResponse: AdminAuthResponse = {
+      user: data.data.user as IUserAdmin,
+      company: undefined // Add company data if available from backend
+    };
+    
     return NextResponse.json({
       success: true,
-      data: {
-        user: response.data.user,
-        company: response.data.company,
-      },
+      data: adminResponse,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Admin login error:", error);
+    
+    const err = error as { message?: string; status?: number; code?: string };
     
     return NextResponse.json(
       { 
         error: { 
-          message: error.message || "Login failed",
-          code: error.code 
+          message: err.message || "Login failed",
+          code: err.code 
         } 
       },
-      { status: error.status || 500 }
+      { status: err.status || 500 }
     );
   }
 }

@@ -16,12 +16,15 @@ class AuthService {
       "/auth/login",
       data
     );
-    
-    if (!response.data) {
+
+    // The interceptor returns response.data, so 'response' is already ApiResponse<AuthResponse>
+    const result = response as unknown as ApiResponse<AuthResponse>;
+
+    if (!result.success || !result.data) {
       throw new Error("Invalid login response");
     }
-    
-    return response.data;
+
+    return result.data;
   }
 
   /**
@@ -32,12 +35,15 @@ class AuthService {
       "/auth/register",
       data
     );
+
+    // The interceptor returns response.data, so 'response' is already ApiResponse<AuthResponse>
+    const result = response as unknown as ApiResponse<AuthResponse>;
     
-    if (!response.data) {
+    if (!result.success || !result.data) {
       throw new Error("Invalid registration response");
     }
-    
-    return response.data;
+
+    return result.data;
   }
 
   /**
@@ -53,31 +59,20 @@ class AuthService {
   async getProfile(): Promise<IUserPublic> {
     // For server-side requests, we need to include auth headers
     const headers = await getServerAuthHeaders();
-    
+
     const response = await apiClient.get<ApiResponse<{ user: IUserPublic }>>(
       "/auth/profile",
       { headers }
     );
 
-    if (!response.data) {
+    // The interceptor returns response.data, so 'response' is already ApiResponse
+    const result = response as unknown as ApiResponse<{ user: IUserPublic }>;
+
+    if (!result.success || !result.data) {
       throw new Error("Invalid profile response");
     }
 
-    const profileData = response.data;
-
-    // Handle different possible response structures
-    if (profileData.user) {
-      return profileData.user;
-    } else if (
-      profileData &&
-      typeof profileData === "object" &&
-      "id" in profileData
-    ) {
-      // If the user data is directly in the data field
-      return profileData as unknown as IUserPublic;
-    } else {
-      throw new Error("Invalid user data structure");
-    }
+    return result.data.user;
   }
 
   /**
@@ -91,7 +86,10 @@ class AuthService {
    * Reset password with token
    */
   async resetPassword(token: string, password: string): Promise<void> {
-    await apiClient.post("/auth/reset-password", { token, newPassword: password });
+    await apiClient.post("/auth/reset-password", {
+      token,
+      newPassword: password,
+    });
   }
 
   /**

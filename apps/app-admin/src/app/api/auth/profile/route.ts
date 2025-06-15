@@ -42,7 +42,10 @@ export async function GET() {
       },
     });
 
-    if (!response.success || !response.data) {
+    // The interceptor returns response.data, so response is already ApiResponse<IUserAdmin>
+    const data = response as unknown as ApiResponse<IUserAdmin>;
+
+    if (!data.success || !data.data) {
       return NextResponse.json(
         { error: { message: "Failed to get profile" } },
         { status: 400 }
@@ -51,8 +54,8 @@ export async function GET() {
 
     // Double-check admin role from backend response
     if (
-      response.data.role !== UserRole.MANAGER &&
-      response.data.role !== UserRole.SUPER_ADMIN
+      data.data.role !== UserRole.MANAGER &&
+      data.data.role !== UserRole.SUPER_ADMIN
     ) {
       return NextResponse.json(
         { error: { message: "Admin access required" } },
@@ -62,11 +65,13 @@ export async function GET() {
 
     return NextResponse.json({ 
       success: true, 
-      data: { user: response.data } 
+      data: { user: data.data } 
     });
-  } catch (error: any) {
+  } catch (error) {
+    const err = error as { message?: string; status?: number; code?: string };
+    
     // If token is invalid, clear cookies
-    if (error.status === 401) {
+    if (err.status === 401) {
       const cookieStore = await cookies();
       cookieStore.delete("accessToken");
       cookieStore.delete("refreshToken");
@@ -76,11 +81,11 @@ export async function GET() {
     return NextResponse.json(
       { 
         error: { 
-          message: error.message || "Failed to get profile",
-          code: error.code 
+          message: err.message || "Failed to get profile",
+          code: err.code 
         } 
       },
-      { status: error.status || 500 }
+      { status: err.status || 500 }
     );
   }
 }
